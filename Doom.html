@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retro DOOM Raycaster JS</title>
+    <style>
+        body {
+            background-color: #111;
+            color: #fff;
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 4px solid #444;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.4);
+            background-color: #000;
+        }
+        .controls {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>DOOM Mini Raycaster (JavaScript)</h2>
+    <canvas id="gameCanvas" width="640" height="400"></canvas>
+    <div class="controls">
+        Gunakan tombol <b>W, A, S, D</b> atau <b>Panah</b> untuk bergerak & berputar.
+    </div>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+const SCREEN_WIDTH = canvas.width;
+const SCREEN_HEIGHT = canvas.height;
+
+// Map game (1 = Dinding, 0 = Jalan)
+const MAP_WIDTH = 10;
+const MAP_HEIGHT = 10;
+const map = [
+    1,1,1,1,1,1,1,1,1,1,
+    1,0,0,0,0,0,1,0,0,1,
+    1,0,1,1,0,0,1,0,0,1,
+    1,0,1,0,0,0,0,0,0,1,
+    1,0,1,0,1,1,1,0,0,1,
+    1,0,0,0,1,0,1,0,0,1,
+    1,0,1,0,1,0,1,0,0,1,
+    1,0,1,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,1,
+    1,1,1,1,1,1,1,1,1,1
+];
+
+// Status Pemain
+const player = {
+    x: 2.5,
+    y: 2.5,
+    angle: 0,
+    speed: 0.04,
+    rotSpeed: 0.03
+};
+
+// Input Keyboard
+const keys = {};
+window.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
+window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+
+// Raycasting Logic
+function raycast() {
+    const fov = Math.PI / 3; // Field of View (60 derajat)
+    const halfFov = fov / 2;
+    const numRays = SCREEN_WIDTH;
+    const deltaAngle = fov / numRays;
+
+    for (let i = 0; i < numRays; i++) {
+        let rayAngle = player.angle - halfFov + i * deltaAngle;
+        let distance = 0;
+        let hitWall = false;
+
+        let cos = Math.cos(rayAngle);
+        let sin = Math.sin(rayAngle);
+
+        // Cari benturan sinar dengan dinding
+        while (!hitWall && distance < 16) {
+            distance += 0.02;
+            let checkX = Math.floor(player.x + cos * distance);
+            let checkY = Math.floor(player.y + sin * distance);
+
+            if (checkX < 0 || checkX >= MAP_WIDTH || checkY < 0 || checkY >= MAP_HEIGHT) {
+                hitWall = true;
+                distance = 16;
+            } else if (map[checkY * MAP_WIDTH + checkX] === 1) {
+                hitWall = true;
+            }
+        }
+
+        // Koreksi Fisheye Effect
+        let correctDistance = distance * Math.cos(rayAngle - player.angle);
+
+        // Hitung tinggi dinding yang dirender
+        let wallHeight = Math.min(SCREEN_HEIGHT, (SCREEN_HEIGHT / correctDistance));
+
+        // Warna dinding berdasarkan jarak (efek bayangan/kehadiran)
+        let colorShade = Math.max(0, 255 - Math.floor(correctDistance * 18));
+        ctx.fillStyle = `rgb(${colorShade}, 0, 0)`; // Gaya merah klasik DOOM
+
+        // Gambar kolom dinding
+        let wallTop = (SCREEN_HEIGHT / 2) - (wallHeight / 2);
+        ctx.fillRect(i, wallTop, 1, wallHeight);
+    }
+}
+
+// Update Pergerakan
+function update() {
+    // Rotasi
+    if (keys['a'] || keys['arrowleft']) player.angle -= player.rotSpeed;
+    if (keys['d'] || keys['arrowright']) player.angle += player.rotSpeed;
+
+    // Maju / Mundur
+    let dx = Math.cos(player.angle) * player.speed;
+    let dy = Math.sin(player.angle) * player.speed;
+
+    if (keys['w'] || keys['arrowup']) {
+        if (map[Math.floor(player.y) * MAP_WIDTH + Math.floor(player.x + dx)] === 0) player.x += dx;
+        if (map[Math.floor(player.y + dy) * MAP_WIDTH + Math.floor(player.x)] === 0) player.y += dy;
+    }
+    if (keys['s'] || keys['arrowdown']) {
+        if (map[Math.floor(player.y) * MAP_WIDTH + Math.floor(player.x - dx)] === 0) player.x -= dx;
+        if (map[Math.floor(player.y - dy) * MAP_WIDTH + Math.floor(player.x)] === 0) player.y -= dy;
+    }
+}
+
+// Gambar Minimap 2D di pojok kiri atas
+function drawMinimap() {
+    const miniSize = 8;
+    for (let y = 0; y < MAP_HEIGHT; y++) {
+        for (let x = 0; x < MAP_WIDTH; x++) {
+            ctx.fillStyle = map[y * MAP_WIDTH + x] === 1 ? '#888' : '#222';
+            ctx.fillRect(x * miniSize + 10, y * miniSize + 10, miniSize - 1, miniSize - 1);
+        }
+    }
+    // Posisi Pemain
+    ctx.fillStyle = '#0f0';
+    ctx.fillRect(player.x * miniSize + 8, player.y * miniSize + 8, 4, 4);
+}
+
+// Main Loop
+function gameLoop() {
+    // Bersihkan layar (Atap/Langit-langit)
+    ctx.fillStyle = '#111';
+    ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT / 2);
+
+    // Lantai
+    ctx.fillStyle = '#333';
+    ctx.fillRect(0, SCREEN_HEIGHT / 2, SCREEN_WIDTH, SCREEN_HEIGHT / 2);
+
+    // Render 3D & Minimap
+    update();
+    raycast();
+    drawMinimap();
+
+    requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
+</script>
+</body>
+</html>
