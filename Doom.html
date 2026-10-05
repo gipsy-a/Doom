@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>DOOM Mobile JS</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        body {
+            background-color: #000;
+            color: #fff;
+            font-family: sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            object-fit: contain;
+        }
+        /* Kontrol layar sentuh untuk HP */
+        .touch-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            display: grid;
+            grid-template-columns: repeat(3, 60px);
+            grid-template-rows: repeat(2, 60px);
+            gap: 10px;
+            z-index: 10;
+        }
+        .btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            border-radius: 12px;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            active-background: rgba(255, 0, 0, 0.5);
+        }
+        .btn:active {
+            background: rgba(255, 0, 0, 0.6);
+        }
+        .btn-up { grid-column: 2; grid-row: 1; }
+        .btn-left { grid-column: 1; grid-row: 2; }
+        .btn-down { grid-column: 2; grid-row: 2; }
+        .btn-right { grid-column: 3; grid-row: 2; }
+    </style>
+</head>
+<body>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- Tombol Kontrol HP -->
+    <div class="touch-controls">
+        <div class="btn btn-up" id="btnUp">▲</div>
+        <div class="btn btn-left" id="btnLeft">◄</div>
+        <div class="btn btn-down" id="btnDown">▼</div>
+        <div class="btn btn-right" id="btnRight">►</div>
+    </div>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+// Ukuran Render Internal
+canvas.width = 320;
+canvas.height = 200;
+
+const MAP_WIDTH = 8;
+const MAP_HEIGHT = 8;
+const map = [
+    1,1,1,1,1,1,1,1,
+    1,0,0,0,0,0,0,1,
+    1,0,1,0,1,1,0,1,
+    1,0,1,0,0,0,0,1,
+    1,0,1,0,1,0,0,1,
+    1,0,0,0,1,0,0,1,
+    1,0,0,0,0,0,0,1,
+    1,1,1,1,1,1,1,1
+];
+
+// Status Pemain (Diposisikan di area kosong agar tidak masuk dinding)
+const player = {
+    x: 1.5,
+    y: 1.5,
+    angle: 0,
+    speed: 0.03,
+    rotSpeed: 0.04
+};
+
+const keys = { up: false, down: false, left: false, right: false };
+
+// Event Keyboard (untuk Laptop/PC)
+window.addEventListener('keydown', e => {
+    if (e.key === 'w' || e.key === 'ArrowUp') keys.up = true;
+    if (e.key === 's' || e.key === 'ArrowDown') keys.down = true;
+    if (e.key === 'a' || e.key === 'ArrowLeft') keys.left = true;
+    if (e.key === 'd' || e.key === 'ArrowRight') keys.right = true;
+});
+
+window.addEventListener('keyup', e => {
+    if (e.key === 'w' || e.keyBerikut adalah kode yang sudah diperbaiki total agar:
+1. **Layar Merah Teratasi**: Penanganan algoritma *raycasting* telah disempurnakan agar tidak ada error perhitungan jarak.
+2. **Support HP / Layar Sentuh**: Menambahkan tombol kontrol virtual (D-Pad) di layar untuk perangkat HP.
+3. **Responsif**: Ukuran canvas menyesuaikan layar HP/Smartphone secara otomatis.
+
+Silakan **salin seluruh kode di bawah ini** ke file HTML (misal: `index.html`) dan buka di browser HP Anda:
+
+```html
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>DOOM Mobile Raycaster</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        body {
+            background-color: #000;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+        #gameContainer {
+            position: relative;
+            width: 100%;
+            max-width: 640px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        canvas {
+            width: 100%;
+            max-width: 640px;
+            height: auto;
+            background-color: #000;
+            border: 2px solid #333;
+        }
+        /* Kontrol Sentuh HP */
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(3, 60px);
+            grid
